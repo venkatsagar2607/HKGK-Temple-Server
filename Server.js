@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 // Do NOT use express.json() for FormData uploads!
 
+
 const storage = multer.diskStorage({
   destination: './uploads/',
   filename: (req, file, cb) => {
@@ -160,4 +161,4 @@ app.post('/assign-bed', (req, res) => {
 });
 
 
-app.listen(3001, () => console.log('Server running on 3001'));
+app.listen(3002, () => console.log('Server running on 3002'));
