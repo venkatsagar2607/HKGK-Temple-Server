@@ -62,7 +62,7 @@ app.post('/bookings', async (req, res) => {
     const adminSettings = await db.collection('admin_settings').findOne({});
     const adminEmail = adminSettings ? adminSettings.adminEmail : null;
 
-    if (adminEmail) {
+    // if (adminEmail) {
       // Construct html message using template literals
       const html = `
         <div style="font-family: Arial, sans-serif; color: #333;">
@@ -105,7 +105,7 @@ app.post('/bookings', async (req, res) => {
         if (error) console.error('Error sending email:', error);
         else console.log('Email sent:', info.response);
       });
-    }
+    // }
 
     res.json({ success: true, bookingId: result.insertedId });
   } catch (err) {
