@@ -89,7 +89,7 @@ app.post('/bookings', async (req, res) => {
 
       const mailOptions = {
         from: 'Accomadation Request <hkgk.templead08@gmail.com>',
-        to: 'hkgk.templead08@gmail.com',
+        to: 'ntkdasa@gmail.com',
         subject: 'New Accommodation Booking Received',
         html,
         attachments: [
