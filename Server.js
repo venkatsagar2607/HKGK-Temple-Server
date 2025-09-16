@@ -47,12 +47,12 @@ app.post('/bookings', async (req, res) => {
   try {
     const {
       name, phoneNumber, email, folkGuidName, fromDate, toDate,
-      checkinTime, aadharNumber, purpose
+      checkinTime, checkoutTime, aadharNumber, purpose
     } = req.body;
 
     const bookingDoc = {
       name, phoneNumber, email, folkGuidName, fromDate, toDate,
-      checkinTime, aadharNumber, purpose,
+      checkinTime, checkoutTime, aadharNumber, purpose,
       status: 'pending', assigned_bed: null
     };
 
@@ -63,8 +63,8 @@ app.post('/bookings', async (req, res) => {
     const adminEmail = adminSettings ? adminSettings.adminEmail : null;
 
     // if (adminEmail) {
-      // Construct html message using template literals
-      const html = `
+    // Construct html message using template literals
+    const html = `
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h2 style="color: #007bff;">New Accommodation Request from ${name}</h2>
           <hr/>
@@ -76,6 +76,7 @@ app.post('/bookings', async (req, res) => {
             <tr><td style="padding: 8px; font-weight: bold;">From Date:</td><td>${fromDate}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">To Date:</td><td>${toDate}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Check-in Time:</td><td>${checkinTime}</td></tr>
+             <tr><td style="padding: 8px; font-weight: bold;">Check-in Time:</td><td>${checkoutTime}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Aadhaar Number:</td><td>${aadharNumber}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Purpose:</td><td>${purpose}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Booking ID:</td><td>${result.insertedId}</td></tr>
@@ -87,24 +88,24 @@ app.post('/bookings', async (req, res) => {
         </div>
       `;
 
-      const mailOptions = {
-        from: 'Accomadation Request <hkgk.templead08@gmail.com>',
-        to: 'ntkdasa@gmail.com',
-        subject: 'New Accommodation Booking Received',
-        html,
-        attachments: [
-          {
-            filename: 'HKGK.jpg',
-            path: path.join(__dirname, 'HKGK.jpg'),  // safer path
-            cid: 'logoimg'  // must match img src cid
-          }
-        ]
-      };
+    const mailOptions = {
+      from: 'Accomadation Request <hkgk.templead08@gmail.com>',
+      to: 'ntkdasa@gmail.com',
+      subject: 'New Accommodation Booking Received',
+      html,
+      attachments: [
+        {
+          filename: 'HKGK.jpg',
+          path: path.join(__dirname, 'HKGK.jpg'),  // safer path
+          cid: 'logoimg'  // must match img src cid
+        }
+      ]
+    };
 
-      transporteradmin.sendMail(mailOptions, (error, info) => {
-        if (error) console.error('Error sending email:', error);
-        else console.log('Email sent:', info.response);
-      });
+    transporteradmin.sendMail(mailOptions, (error, info) => {
+      if (error) console.error('Error sending email:', error);
+      else console.log('Email sent:', info.response);
+    });
     // }
 
     res.json({ success: true, bookingId: result.insertedId });
@@ -160,6 +161,7 @@ app.post('/updateBookingStatus', async (req, res) => {
           Phone: ${user.phoneNumber}<br/>
           Email: ${user.email}<br/>
           Check-in: ${user.checkinTime}<br/>
+          Check-out:${user.checkoutTime}<br/>
           Guide: ${user.folkGuidName || 'N/A'}<br/>
           Dates: ${new Date(user.fromDate).toDateString()} to ${new Date(user.toDate).toDateString()}<br/>
           </p>
@@ -302,6 +304,7 @@ app.post('/assign-bed', async (req, res) => {
               <li style="color: green;"><strong>Bed Number:</strong> ${cleanBedId}</li>
               <li><strong>Project:</strong> HKGK Accommodation</li>
               <li><strong>Check-in time:</strong> ${user.checkinTime}</li>
+              <li><strong>Check-out time:</strong>${user.checkoutTime}</li
               <li><strong>Folk Guide:</strong> ${user.folkGuidName || 'N/A'}</li>
             </ul>
             <p style="margin-top:14px">If you have any questions, please contact your folk guide. <br/> <b>Hare Krishna!</b></p>
