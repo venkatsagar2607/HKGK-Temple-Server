@@ -60,7 +60,7 @@ app.post('/bookings', async (req, res) => {
 
     // Fetch admin email
     const adminSettings = await db.collection('admin_settings').findOne({});
-    const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
+    //const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
 
     const approveLink = `https://hkgk-admin.vercel.app/`;
     const rejectLink = `https://hkgk-admin.vercel.app/`;
@@ -95,7 +95,7 @@ app.post('/bookings', async (req, res) => {
 
     const mailOptions = {
       from: 'Accomadation Request <hkgk.templead08@gmail.com>',
-      to: adminEmail,
+      to: 'ntkdasa@gmail.com',
       subject: 'New Accommodation Booking Received',
       html,
       attachments: [
@@ -155,7 +155,7 @@ app.post('/updateBookingStatus', async (req, res) => {
 
     // fetch admin email
     const adminSettings = await db.collection('admin_settings').findOne({});
-    const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
+    //const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
 
     let subject, html;
     if (status === "approved") {
@@ -201,7 +201,7 @@ app.post('/updateBookingStatus', async (req, res) => {
       const approveLink = "https://hkgk-folkadmin.vercel.app/"
       const adminMailOptions = {
         from: 'Temple System <hkgk.templead08@gmail.com>',
-        to: '2100031756cseh@gmail.com',   // or fetch from admin_settings
+        to: 'nagachari555@gmail.com',   // or fetch from admin_settings
         subject: `User Approved - Please Assign Bed`,
         html: `
     <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; border-radius: 8px;">
