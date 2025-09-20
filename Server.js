@@ -60,10 +60,11 @@ app.post('/bookings', async (req, res) => {
 
     // Fetch admin email
     const adminSettings = await db.collection('admin_settings').findOne({});
-    const adminEmail = adminSettings ? adminSettings.adminEmail : null;
+    const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
 
-    // if (adminEmail) {
-    // Construct html message using template literals
+    const approveLink = `https://hkgk-admin.vercel.app/`;
+    const rejectLink = `https://hkgk-admin.vercel.app/`;
+
     const html = `
         <div style="font-family: Arial, sans-serif; color: #333;">
           <h2 style="color: #007bff;">New Accommodation Request from ${name}</h2>
@@ -76,11 +77,15 @@ app.post('/bookings', async (req, res) => {
             <tr><td style="padding: 8px; font-weight: bold;">From Date:</td><td>${fromDate}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">To Date:</td><td>${toDate}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Check-in Time:</td><td>${checkinTime}</td></tr>
-             <tr><td style="padding: 8px; font-weight: bold;">Check-in Time:</td><td>${checkoutTime}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Check-out Time:</td><td>${checkoutTime}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Aadhaar Number:</td><td>${aadharNumber}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Purpose:</td><td>${purpose}</td></tr>
             <tr><td style="padding: 8px; font-weight: bold;">Booking ID:</td><td>${result.insertedId}</td></tr>
           </table>
+          <hr/>
+          <div style="margin:30px 0;text-align:center;">
+          <a href="${approveLink}" style="background:blue;color:white;text-decoration:none;padding:10px 24px;border-radius:6px;margin-right:14px;display:inline-block;font-weight:bold;">Click Here</a>
+          </div>
           <hr />
           <div style="text-align:center; margin-top:24px;">
             <img src="cid:logoimg" alt="HKGK Logo" style="width:160px;" />
@@ -90,14 +95,14 @@ app.post('/bookings', async (req, res) => {
 
     const mailOptions = {
       from: 'Accomadation Request <hkgk.templead08@gmail.com>',
-      to: 'ntkdasa@gmail.com',
+      to: adminEmail,
       subject: 'New Accommodation Booking Received',
       html,
       attachments: [
         {
           filename: 'HKGK.jpg',
-          path: path.join(__dirname, 'HKGK.jpg'),  // safer path
-          cid: 'logoimg'  // must match img src cid
+          path: path.join(__dirname, 'HKGK.jpg'),
+          cid: 'logoimg'
         }
       ]
     };
@@ -106,7 +111,6 @@ app.post('/bookings', async (req, res) => {
       if (error) console.error('Error sending email:', error);
       else console.log('Email sent:', info.response);
     });
-    // }
 
     res.json({ success: true, bookingId: result.insertedId });
   } catch (err) {
@@ -114,7 +118,6 @@ app.post('/bookings', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // --- Track Booking By Phone ---
 app.post('/track', async (req, res) => {
@@ -143,10 +146,16 @@ app.post('/updateBookingStatus', async (req, res) => {
     const { id, status } = req.body;
     const _id = new ObjectId(id);
     const updateResult = await userDetailsCollection.updateOne({ _id }, { $set: { status } });
+
     if (updateResult.matchedCount === 0) {
       return res.status(404).json({ error: 'Booking not found' });
     }
+
     const user = await userDetailsCollection.findOne({ _id });
+
+    // fetch admin email
+    const adminSettings = await db.collection('admin_settings').findOne({});
+    const adminEmail = adminSettings ? adminSettings.adminEmail : '2100031756cseh@gmail.com';
 
     let subject, html;
     if (status === "approved") {
@@ -161,7 +170,7 @@ app.post('/updateBookingStatus', async (req, res) => {
           Phone: ${user.phoneNumber}<br/>
           Email: ${user.email}<br/>
           Check-in: ${user.checkinTime}<br/>
-          Check-out:${user.checkoutTime}<br/>
+          Check-out: ${user.checkoutTime}<br/>
           Guide: ${user.folkGuidName || 'N/A'}<br/>
           Dates: ${new Date(user.fromDate).toDateString()} to ${new Date(user.toDate).toDateString()}<br/>
           </p>
@@ -172,6 +181,70 @@ app.post('/updateBookingStatus', async (req, res) => {
           </div>
         </div>
       `;
+
+      // Send approval mail to user
+      if (user.email) {
+        const userMailOptions = {
+          from: 'Temple Administrator <hkgk.templead08@gmail.com>',
+          to: user.email,
+          subject,
+          html,
+          attachments: [{ filename: 'HKGK.jpg', path: './HKGK.jpg', cid: 'logoimg' }]
+        };
+        transporteradmin.sendMail(userMailOptions, (error, info) => {
+          if (error) console.error('User approval mail error:', error);
+          else console.log('User approval mail sent:', info.response);
+        });
+      }
+
+      // --- ALSO notify admin ---
+      const approveLink = "https://hkgk-folkadmin.vercel.app/"
+      const adminMailOptions = {
+        from: 'Temple System <hkgk.templead08@gmail.com>',
+        to: '2100031756cseh@gmail.com',   // or fetch from admin_settings
+        subject: `User Approved - Please Assign Bed`,
+        html: `
+    <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; border-radius: 8px;">
+      <h2 style="color: #222; margin-bottom:12px"><b>Hare Krishna Chari,</b></h2>
+      <p>A ${user.name} booking has been <span style="color: green; font-weight: bold;">APPROVED</span>. Please assign a bed.</p>
+
+      <p><strong>User Details:</strong><br/>
+        <b>Name:</b> ${user.name}<br/>
+        <b>Phone:</b> ${user.phoneNumber}<br/>
+        <b>Email:</b> ${user.email}<br/>
+        <b>Check-in:</b> ${user.checkinTime}<br/>
+        <b>Check-out:</b> ${user.checkoutTime}<br/>
+        <b>Guide:</b> ${user.folkGuidName || 'N/A'}<br/>
+        <b>Dates:</b> ${new Date(user.fromDate).toDateString()} – ${new Date(user.toDate).toDateString()}<br/>
+      </p>
+
+      <p style="margin-top:14px; font-size:15px;">
+        <b>Next Step:</b> Please log in to the admin portal and assign a bed for this user.
+      </p>
+      <hr/>
+          <div style="margin:30px 0;text-align:center;">
+          <a href="${approveLink}" style="background:blue;color:white;text-decoration:none;padding:10px 24px;border-radius:6px;margin-right:14px;display:inline-block;font-weight:bold;">Click Here</a>
+          </div>
+      <hr />
+      <div style="text-align:center; margin-top:24px;">
+        <img src="cid:logoimg" alt="HKGK Logo" style="width:160px;"/>
+        <p style="margin-top:10px; font-size:13px; color:#666;">Hare Krishna Golden Temple – Admin Notification</p>
+      </div>
+    </div>
+  `,
+        attachments: [
+          {
+            filename: 'HKGK.jpg',
+            path: './HKGK.jpg',
+            cid: 'logoimg'
+          }
+        ]
+      };
+
+      transporteradmin.sendMail(adminMailOptions, (error, info) => {
+        if (error) console.error('Admin notify mail error:', error);
+        else console.log('Admin notify mail sent:', info.response);
+      });
     } else if (status === "denied" || status === "rejected") {
       subject = "Your Booking Has Been Rejected";
       html = `
@@ -185,28 +258,22 @@ app.post('/updateBookingStatus', async (req, res) => {
           </div>
         </div>
       `;
+
+      if (user.email) {
+        const rejectMailOptions = {
+          from: 'Temple Administrator <hkgk.templead08@gmail.com>',
+          to: user.email,
+          subject,
+          html,
+          attachments: [{ filename: 'HKGK.jpg', path: './HKGK.jpg', cid: 'logoimg' }]
+        };
+        transporteradmin.sendMail(rejectMailOptions, (error, info) => {
+          if (error) console.error('Rejection mail error:', error);
+          else console.log('Rejection mail sent:', info.response);
+        });
+      }
     }
 
-    // Send the email only for relevant status
-    if ((status === "approved" || status === "denied" || status === "rejected") && user && user.email) {
-      const mailOptions = {
-        from: 'Temple Adminstrator <hkgk.templead08@gmail.com>',
-        to: user.email,
-        subject,
-        html,
-        attachments: [
-          {
-            filename: 'HKGK.jpg',
-            path: './HKGK.jpg',
-            cid: 'logoimg'
-          }
-        ]
-      };
-      transporteradmin.sendMail(mailOptions, (error, info) => {
-        if (error) console.error('Error sending email:', error);
-        else console.log('Approval/Rejection mail sent:', info.response);
-      });
-    }
     res.json({ success: true, message: 'Status updated successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -272,10 +339,24 @@ app.post('/assign-bed', async (req, res) => {
     const _id = new ObjectId(userId);
     const cleanBedId = bedId.trim().replace(/\s/g, '');
 
+    const erp = await userDetailsCollection.findOne({_id});
+
+    if(erp.assigned_bed != null)
+    {
+      const bedUpdateResult = await bedsCollection.updateOne(
+      { bedId: erp.assigned_bed },
+      { $set: { status: 'available' } }
+    );
+    }
+
     // Assign bed to user
     const userUpdateResult = await userDetailsCollection.updateOne(
       { _id },
       { $set: { assigned_bed: cleanBedId, status: 'bed assigned' } }
+    );
+    await bedsCollection.updateOne(
+      { bedId: cleanBedId },
+      { $set: { status: 'occupied' } }
     );
     if (userUpdateResult.matchedCount === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -291,9 +372,8 @@ app.post('/assign-bed', async (req, res) => {
     const user = await userDetailsCollection.findOne({ _id });
 
     if (user && user.email) {
-      // --- Send assignment mail: includes project and bed ---
       const mailOptions = {
-        from: 'Folk Admin <folklead.hkgk08@gmail.com>', // Use the folkadmin or official address
+        from: 'Folk Admin <folklead.hkgk08@gmail.com>',
         to: user.email,
         subject: `Bed Assigned - for your HKGK Accommodation`,
         html: `
@@ -304,7 +384,7 @@ app.post('/assign-bed', async (req, res) => {
               <li style="color: green;"><strong>Bed Number:</strong> ${cleanBedId}</li>
               <li><strong>Project:</strong> HKGK Accommodation</li>
               <li><strong>Check-in time:</strong> ${user.checkinTime}</li>
-              <li><strong>Check-out time:</strong>${user.checkoutTime}</li
+              <li><strong>Check-out time:</strong>${user.checkoutTime}</li>
               <li><strong>Folk Guide:</strong> ${user.folkGuidName || 'N/A'}</li>
             </ul>
             <p style="margin-top:14px">If you have any questions, please contact your folk guide. <br/> <b>Hare Krishna!</b></p>
@@ -331,7 +411,7 @@ app.post('/assign-bed', async (req, res) => {
     if (bedUpdateResult.modifiedCount >= 1) {
       return res.json({ success: true, message: "Bed assigned and user notified." });
     }
-    res.json({ error: 'Bed update failed' });
+    return res.json({ success: true, message: "Bed assigned and user notified." });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
